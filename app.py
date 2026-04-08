@@ -293,6 +293,173 @@ BOOSTER_HINTS = {
     "goalkeeping": {"gk_awareness": 1.0, "gk_reach": 1.0},
 }
 
+STAT_DISTANCE_WEIGHTS = {
+    "ATTACKER": {
+        "offensive_awareness": 2.6,
+        "finishing": 2.8,
+        "ball_control": 1.8,
+        "dribbling": 1.4,
+        "tight_possession": 1.7,
+        "low_pass": 0.9,
+        "lofted_pass": 0.8,
+        "heading": 1.8,
+        "place_kicking": 0.8,
+        "curl": 0.7,
+        "defensive_awareness": 0.4,
+        "defensive_engagement": 0.3,
+        "tackling": 0.3,
+        "aggression": 0.7,
+        "goalkeeping": 0.1,
+        "gk_catching": 0.1,
+        "gk_parrying": 0.1,
+        "gk_reflexes": 0.1,
+        "gk_reach": 0.1,
+        "speed": 1.6,
+        "acceleration": 1.8,
+        "kicking_power": 1.4,
+        "jump": 1.0,
+        "physical": 1.4,
+        "balance": 1.0,
+        "stamina": 1.0,
+    },
+    "WIDE": {
+        "offensive_awareness": 1.7,
+        "finishing": 1.5,
+        "ball_control": 2.0,
+        "dribbling": 2.4,
+        "tight_possession": 2.2,
+        "low_pass": 1.3,
+        "lofted_pass": 1.2,
+        "heading": 0.6,
+        "place_kicking": 1.0,
+        "curl": 1.3,
+        "defensive_awareness": 0.5,
+        "defensive_engagement": 0.5,
+        "tackling": 0.4,
+        "aggression": 0.6,
+        "goalkeeping": 0.1,
+        "gk_catching": 0.1,
+        "gk_parrying": 0.1,
+        "gk_reflexes": 0.1,
+        "gk_reach": 0.1,
+        "speed": 1.9,
+        "acceleration": 2.0,
+        "kicking_power": 1.2,
+        "jump": 0.7,
+        "physical": 1.0,
+        "balance": 1.3,
+        "stamina": 1.2,
+    },
+    "MIDFIELDER": {
+        "offensive_awareness": 1.5,
+        "finishing": 1.0,
+        "ball_control": 1.9,
+        "dribbling": 1.5,
+        "tight_possession": 1.8,
+        "low_pass": 2.2,
+        "lofted_pass": 2.0,
+        "heading": 0.7,
+        "place_kicking": 1.1,
+        "curl": 1.2,
+        "defensive_awareness": 1.3,
+        "defensive_engagement": 1.3,
+        "tackling": 1.2,
+        "aggression": 1.0,
+        "goalkeeping": 0.1,
+        "gk_catching": 0.1,
+        "gk_parrying": 0.1,
+        "gk_reflexes": 0.1,
+        "gk_reach": 0.1,
+        "speed": 1.0,
+        "acceleration": 1.0,
+        "kicking_power": 1.1,
+        "jump": 0.8,
+        "physical": 1.0,
+        "balance": 1.4,
+        "stamina": 1.5,
+    },
+    "DEFENDER": {
+        "offensive_awareness": 0.4,
+        "finishing": 0.3,
+        "ball_control": 1.0,
+        "dribbling": 0.7,
+        "tight_possession": 0.9,
+        "low_pass": 1.3,
+        "lofted_pass": 1.4,
+        "heading": 1.7,
+        "place_kicking": 0.5,
+        "curl": 0.4,
+        "defensive_awareness": 2.4,
+        "defensive_engagement": 2.2,
+        "tackling": 2.3,
+        "aggression": 1.4,
+        "goalkeeping": 0.1,
+        "gk_catching": 0.1,
+        "gk_parrying": 0.1,
+        "gk_reflexes": 0.1,
+        "gk_reach": 0.1,
+        "speed": 1.1,
+        "acceleration": 1.0,
+        "kicking_power": 0.9,
+        "jump": 1.5,
+        "physical": 1.9,
+        "balance": 0.8,
+        "stamina": 1.1,
+    },
+    "GOALKEEPER": {
+        "offensive_awareness": 0.1,
+        "finishing": 0.1,
+        "ball_control": 0.4,
+        "dribbling": 0.3,
+        "tight_possession": 0.3,
+        "low_pass": 0.6,
+        "lofted_pass": 0.8,
+        "heading": 0.3,
+        "place_kicking": 0.3,
+        "curl": 0.1,
+        "defensive_awareness": 1.0,
+        "defensive_engagement": 0.9,
+        "tackling": 0.7,
+        "aggression": 0.6,
+        "goalkeeping": 3.0,
+        "gk_catching": 3.0,
+        "gk_parrying": 3.0,
+        "gk_reflexes": 3.0,
+        "gk_reach": 3.0,
+        "speed": 0.6,
+        "acceleration": 0.6,
+        "kicking_power": 0.9,
+        "jump": 1.1,
+        "physical": 1.0,
+        "balance": 0.8,
+        "stamina": 0.7,
+    },
+}
+
+DIRECT_HIGH_STAT_GUARDRAILS = {
+    "offensive_awareness": [(96, 0), (92, 1), (88, 2)],
+    "finishing": [(96, 0), (92, 1), (88, 2)],
+    "ball_control": [(96, 0), (92, 1), (88, 2)],
+    "dribbling": [(96, 0), (92, 1), (88, 2)],
+    "tight_possession": [(96, 0), (92, 1), (88, 2)],
+    "low_pass": [(96, 1), (92, 2), (88, 3)],
+    "lofted_pass": [(96, 1), (92, 2), (88, 3)],
+    "heading": [(95, 0), (91, 1), (87, 2)],
+    "place_kicking": [(96, 1), (92, 2), (88, 3)],
+    "curl": [(96, 1), (92, 2), (88, 3)],
+    "defensive_awareness": [(96, 0), (92, 1), (88, 2)],
+    "aggression": [(96, 0), (92, 1), (88, 2)],
+    "speed": [(96, 0), (92, 1), (88, 2)],
+    "acceleration": [(96, 0), (92, 1), (88, 2)],
+    "kicking_power": [(96, 0), (92, 1), (88, 2)],
+    "jump": [(95, 0), (91, 1), (87, 2)],
+    "balance": [(96, 0), (92, 1), (88, 2)],
+    "stamina": [(96, 0), (92, 1), (88, 2)],
+}
+
+CONDITION_MAP = {"E": 0, "D": 1, "C": 2, "B": 3, "A": 4}
+
+DATASET_STATE: Dict[str, Any] = {"path": None, "records": [], "family_counts": {}, "loaded": False}
 DATASET_STATE: Dict[str, Any] = {"path": None, "records": [], "family_counts": {}, "loaded": False}
 
 
@@ -354,7 +521,7 @@ def family_from_position(position: str) -> str:
     return "ATTACKER"
 
 
-def find_dataset_path() -> str | None:
+def find_dataset_paths() -> List[str]:
     candidate_patterns = [
         "pes-20-21-efootball-dataset*.csv",
         "paired_pes2020_efootball_seed_dataset.csv",
@@ -370,10 +537,189 @@ def find_dataset_path() -> str | None:
             continue
         for pattern in candidate_patterns:
             matches.extend(root.glob(pattern))
-    if not matches:
+    unique_matches = sorted(set(matches), key=lambda p: (p.stat().st_mtime, str(p)), reverse=True)
+    return [str(item) for item in unique_matches]
+
+
+def is_valid_dataset_row(row: Dict[str, Any]) -> bool:
+    if not str(row.get("player_name", "")).strip():
+        return False
+    if not normalize_position(row.get("pes_screenshot_position") or row.get("position")):
+        return False
+    present_stats = sum(1 for stat in EF_REQUIRED_STATS if str(row.get("ef_" + stat, "")).strip() != "")
+    return present_stats >= 20
+
+
+def dataset_record_key(row: Dict[str, Any]) -> Tuple[str, str, str, str, int]:
+    player_name = str(row.get("player_name", "")).strip().lower()
+    pes_position = normalize_position(row.get("pes_screenshot_position") or row.get("position"))
+    ef_position = normalize_position(row.get("ef_screenshot_position") or row.get("position"))
+    style = str(row.get("ef_playing_style", "")).strip().lower()
+    ef_ovr = int(safe_float(row.get("ef_screenshot_ovr"), -1))
+    return (player_name, pes_position, ef_position, style, ef_ovr)
+
+
+def summarize_dataset_paths(paths: List[str]) -> str | None:
+    if not paths:
         return None
-    matches = sorted(set(matches), key=lambda p: p.stat().st_mtime, reverse=True)
-    return str(matches[0])
+    if len(paths) == 1:
+        return paths[0]
+    return paths[0] + f" | +{len(paths) - 1} file lain"
+
+
+def normalize_style_text(value: Any) -> str:
+    return re.sub(r"[^a-z0-9]+", " ", str(value or "").strip().lower()).strip()
+
+
+def metadata_distance(player: Dict[str, Any], record: Dict[str, Any]) -> Tuple[float, Dict[str, Any]]:
+    distance = 0.0
+    breakdown: Dict[str, Any] = {}
+
+    same_name = str(player.get("player_name", "")).strip().lower() == str(record.get("player_name", "")).strip().lower()
+    same_position = normalize_position(player.get("position")) == normalize_position(record.get("position"))
+    same_style = normalize_style_text(player.get("playing_style")) == normalize_style_text(record.get("playing_style"))
+
+    if not same_position:
+        distance += 12.0
+    if same_style:
+        distance -= 2.0
+    elif player.get("playing_style") and record.get("playing_style"):
+        distance += 6.0
+    if same_name:
+        distance -= 6.0
+
+    height_penalty = abs(safe_float(player.get("height_cm")) - safe_float(record.get("height_cm"))) * 0.22
+    weight_penalty = abs(safe_float(player.get("weight_kg")) - safe_float(record.get("weight_kg"))) * 0.18
+    age_penalty = abs(safe_float(player.get("age")) - safe_float(record.get("age"))) * 0.20
+
+    distance += height_penalty + weight_penalty + age_penalty
+
+    if str(player.get("foot", "")).strip().lower() != str(record.get("foot", "")).strip().lower():
+        distance += 3.0
+
+    condition_gap = abs(CONDITION_MAP.get(str(player.get("condition", "C")).strip().upper(), 2) - CONDITION_MAP.get(str(record.get("condition", "C")).strip().upper(), 2))
+    distance += condition_gap * 1.5
+
+    for booster_key in ("booster_1", "booster_2"):
+        player_booster = normalize_style_text(player.get(booster_key))
+        record_booster = normalize_style_text(record.get(booster_key))
+        if player_booster != record_booster:
+            if player_booster and record_booster:
+                distance += 1.8
+            elif player_booster or record_booster:
+                distance += 0.9
+
+    distance = max(distance, 0.0)
+    breakdown["same_name"] = same_name
+    breakdown["same_position"] = same_position
+    breakdown["same_style"] = same_style
+    breakdown["height_penalty"] = round(height_penalty, 2)
+    breakdown["weight_penalty"] = round(weight_penalty, 2)
+    breakdown["age_penalty"] = round(age_penalty, 2)
+    breakdown["metadata_distance"] = round(distance, 2)
+    return distance, breakdown
+
+
+def get_family_stat_weights(family: str) -> Dict[str, float]:
+    return STAT_DISTANCE_WEIGHTS.get(family, STAT_DISTANCE_WEIGHTS["ATTACKER"])
+
+
+def derive_empirical_delta_profiles(records: List[Dict[str, Any]]) -> Tuple[Dict[str, Dict[str, float]], Dict[str, Dict[str, float]], Dict[str, int], Dict[str, int]]:
+    family_sums: Dict[str, Dict[str, float]] = {}
+    family_counts: Dict[str, int] = {}
+    position_sums: Dict[str, Dict[str, float]] = {}
+    position_counts: Dict[str, int] = {}
+
+    tracked_stats = DIRECT_STATS + SPECIAL_STATS + ["weak_foot_usage", "weak_foot_accuracy", "form", "injury_resistance"]
+
+    for record in records:
+        family = record["family"]
+        position = record["position"]
+        family_sums.setdefault(family, {})
+        position_sums.setdefault(position, {})
+        family_counts[family] = family_counts.get(family, 0) + 1
+        position_counts[position] = position_counts.get(position, 0) + 1
+
+        for stat in DIRECT_STATS + SPECIAL_STATS:
+            delta_value = safe_float(record["pes_target"].get(stat)) - safe_float(record["raw_projection"].get(stat))
+            family_sums[family][stat] = family_sums[family].get(stat, 0.0) + delta_value
+            position_sums[position][stat] = position_sums[position].get(stat, 0.0) + delta_value
+
+        for stat in ["weak_foot_usage", "weak_foot_accuracy", "form", "injury_resistance"]:
+            target_value = safe_float(record["pes_target"].get(stat))
+            family_sums[family][stat] = family_sums[family].get(stat, 0.0) + target_value
+            position_sums[position][stat] = position_sums[position].get(stat, 0.0) + target_value
+
+    family_profiles = {family: {stat: values.get(stat, 0.0) / family_counts[family] for stat in tracked_stats} for family, values in family_sums.items()}
+    position_profiles = {position: {stat: values.get(stat, 0.0) / position_counts[position] for stat in tracked_stats} for position, values in position_sums.items()}
+    return family_profiles, position_profiles, family_counts, position_counts
+
+
+def resolve_delta_profile(player: Dict[str, Any], family: str, position: str) -> Tuple[Dict[str, float], List[str]]:
+    notes: List[str] = []
+    fallback = FAMILY_DELTA_PROFILES.get(family, FAMILY_DELTA_PROFILES["ATTACKER"])
+    family_profiles = DATASET_STATE.get("family_delta_profiles", {})
+    position_profiles = DATASET_STATE.get("position_delta_profiles", {})
+    family_counts = DATASET_STATE.get("family_counts", {})
+    position_counts = DATASET_STATE.get("position_counts", {})
+
+    family_empirical = family_profiles.get(family)
+    position_empirical = position_profiles.get(position)
+    family_count = family_counts.get(family, 0)
+    position_count = position_counts.get(position, 0)
+
+    tracked_stats = DIRECT_STATS + SPECIAL_STATS + ["weak_foot_usage", "weak_foot_accuracy", "form", "injury_resistance"]
+    profile: Dict[str, float] = {}
+
+    if position_empirical and position_count >= 5:
+        for stat in tracked_stats:
+            profile[stat] = (0.75 * safe_float(position_empirical.get(stat))) + (0.25 * safe_float(fallback.get(stat)))
+        notes.append(f"Profil posisi aktif: {position} berbasis {position_count} data")
+        return profile, notes
+
+    if family_empirical and family_count >= 8:
+        for stat in tracked_stats:
+            profile[stat] = (0.70 * safe_float(family_empirical.get(stat))) + (0.30 * safe_float(fallback.get(stat)))
+        notes.append(f"Profil family aktif: {family} berbasis {family_count} data")
+        return profile, notes
+
+    notes.append(f"Fallback family profile aktif: {family}")
+    return dict(fallback), notes
+
+
+def apply_high_stat_guardrails(player: Dict[str, Any], output: Dict[str, int]) -> Dict[str, int]:
+    protected = dict(output)
+    for stat, rules in DIRECT_HIGH_STAT_GUARDRAILS.items():
+        ef_value = clamp(min(safe_float(player["stats"].get(stat)), 99))
+        for threshold, tolerance in rules:
+            if ef_value >= threshold:
+                floor_value = max(40, ef_value - tolerance)
+                protected[stat] = max(protected.get(stat, 40), floor_value)
+                break
+
+    if player.get("family") == "GOALKEEPER":
+        for stat in ["gk_awareness", "gk_catching", "gk_clearing", "gk_reflexes", "gk_reach"]:
+            ef_source_key = stat.replace("gk_awareness", "goalkeeping") if stat == "gk_awareness" else stat
+            if stat == "gk_clearing":
+                ef_value = max(safe_float(player["stats"].get("goalkeeping")), safe_float(player["stats"].get("gk_parrying")))
+            elif stat == "gk_awareness":
+                ef_value = safe_float(player["stats"].get("goalkeeping"))
+            else:
+                ef_value = safe_float(player["stats"].get(ef_source_key))
+            ef_value = clamp(min(ef_value, 99))
+            if ef_value >= 95:
+                protected[stat] = max(protected.get(stat, 40), ef_value - 1)
+    return protected
+
+
+def choose_family_weight(family: str, family_count: int) -> Tuple[float, float]:
+    if family_count >= 40:
+        return 0.35, 0.65
+    if family_count >= 15:
+        return 0.45, 0.55
+    if family_count >= 8:
+        return 0.55, 0.45
+    return 0.70, 0.30
 
 
 def build_base_projection(player: Dict[str, Any], use_clamp: bool = True) -> Dict[str, float]:
@@ -458,34 +804,62 @@ def raw_projection_from_row(row: Dict[str, Any]) -> Dict[str, float]:
 
 
 def load_dataset_records() -> Dict[str, Any]:
-    path = find_dataset_path()
-    state = {"path": path, "records": [], "family_counts": {}, "loaded": False}
-    if not path or not os.path.exists(path):
+    paths = find_dataset_paths()
+    state = {
+        "path": summarize_dataset_paths(paths),
+        "paths": paths,
+        "records": [],
+        "family_counts": {},
+        "position_counts": {},
+        "family_delta_profiles": {},
+        "position_delta_profiles": {},
+        "loaded": False,
+    }
+    if not paths:
         return state
 
-    with open(path, "r", encoding="utf-8-sig", newline="") as handle:
-        reader = csv.DictReader(handle)
-        for raw_row in reader:
-            row = dict(raw_row)
-            position = normalize_position(row.get("pes_screenshot_position") or row.get("position"))
-            family = family_from_position(position)
-            parsed = {
-                "player_name": row.get("player_name", ""),
-                "position": position,
-                "family": family,
-                "playing_style": str(row.get("ef_playing_style", "")).strip(),
-                "ef_vector": {stat: safe_float(row.get("ef_" + stat)) for stat in EF_REQUIRED_STATS},
-                "pes_target": {stat: safe_float(row.get("pes_" + stat)) for stat in PES_OUTPUT_ORDER},
-            }
-            parsed["raw_projection"] = raw_projection_from_row(row)
-            state["records"].append(parsed)
+    seen_keys = set()
+    for path in paths:
+        if not os.path.exists(path):
+            continue
+        with open(path, "r", encoding="utf-8-sig", newline="") as handle:
+            reader = csv.DictReader(handle)
+            for raw_row in reader:
+                row = dict(raw_row)
+                if not is_valid_dataset_row(row):
+                    continue
+                dedupe_key = dataset_record_key(row)
+                if dedupe_key in seen_keys:
+                    continue
+                seen_keys.add(dedupe_key)
 
-    family_counts: Dict[str, int] = {}
-    for record in state["records"]:
-        family_counts[record["family"]] = family_counts.get(record["family"], 0) + 1
+                position = normalize_position(row.get("pes_screenshot_position") or row.get("position"))
+                family = family_from_position(position)
+                parsed = {
+                    "player_name": row.get("player_name", ""),
+                    "position": position,
+                    "family": family,
+                    "playing_style": str(row.get("ef_playing_style", "")).strip(),
+                    "booster_1": str(row.get("ef_booster_1", "")).strip(),
+                    "booster_2": str(row.get("ef_booster_2", "")).strip(),
+                    "age": safe_float(row.get("ef_age") or row.get("pes_age")),
+                    "height_cm": safe_float(row.get("ef_height_cm") or row.get("pes_height_cm")),
+                    "weight_kg": safe_float(row.get("ef_weight_kg") or row.get("pes_weight_kg")),
+                    "foot": str(row.get("ef_foot", "")).strip(),
+                    "condition": str(row.get("ef_condition", "")).strip(),
+                    "ef_position": normalize_position(row.get("ef_screenshot_position") or row.get("position")),
+                    "ef_vector": {stat: safe_float(row.get("ef_" + stat)) for stat in EF_REQUIRED_STATS},
+                    "pes_target": {stat: safe_float(row.get("pes_" + stat)) for stat in PES_OUTPUT_ORDER},
+                }
+                parsed["raw_projection"] = raw_projection_from_row(row)
+                state["records"].append(parsed)
 
+    family_profiles, position_profiles, family_counts, position_counts = derive_empirical_delta_profiles(state["records"])
     state["family_counts"] = family_counts
-    state["loaded"] = True
+    state["position_counts"] = position_counts
+    state["family_delta_profiles"] = family_profiles
+    state["position_delta_profiles"] = position_profiles
+    state["loaded"] = len(state["records"]) > 0
     return state
 
 
@@ -514,23 +888,27 @@ def find_style_adjustments(player: Dict[str, Any]) -> Tuple[Dict[str, float], Li
     return delta, notes
 
 
-def weighted_neighbor_delta(player: Dict[str, Any], family: str, top_k: int = 5) -> Tuple[Dict[str, float], List[Dict[str, Any]]]:
+def weighted_neighbor_delta(player: Dict[str, Any], family: str, top_k: int = 7) -> Tuple[Dict[str, float], List[Dict[str, Any]]]:
     if not DATASET_STATE["loaded"] or not DATASET_STATE["records"]:
         return {}, []
 
     target = player["stats"]
-    candidates: List[Tuple[float, Dict[str, Any]]] = []
+    stat_weights = get_family_stat_weights(family)
+    candidates: List[Tuple[float, float, float, Dict[str, Any], Dict[str, Any]]] = []
+
     for record in DATASET_STATE["records"]:
-        distance = 0.0
+        stat_distance = 0.0
         for stat in EF_REQUIRED_STATS:
-            distance += abs(safe_float(target.get(stat)) - safe_float(record["ef_vector"].get(stat)))
+            weight = safe_float(stat_weights.get(stat), 1.0)
+            diff = abs(safe_float(target.get(stat)) - safe_float(record["ef_vector"].get(stat)))
+            stat_distance += diff * weight
 
-        if record["family"] == family:
-            distance *= 0.75
-        if str(player.get("playing_style", "")).strip().lower() == str(record.get("playing_style", "")).strip().lower():
-            distance *= 0.85
+        meta_distance, meta_breakdown = metadata_distance(player, record)
+        total_distance = stat_distance + meta_distance
 
-        candidates.append((distance, record))
+        if record["family"] != family:
+            total_distance += 18.0
+        candidates.append((total_distance, stat_distance, meta_distance, record, meta_breakdown))
 
     candidates.sort(key=lambda item: item[0])
     top = candidates[: max(1, min(top_k, len(candidates)))]
@@ -538,15 +916,19 @@ def weighted_neighbor_delta(player: Dict[str, Any], family: str, top_k: int = 5)
     neighbor_meta: List[Dict[str, Any]] = []
 
     total_weight = 0.0
-    for distance, record in top:
-        weight = 1.0 / max(distance, 1.0)
+    for total_distance, stat_distance, meta_distance, record, meta_breakdown in top:
+        weight = 1.0 / max(total_distance, 0.25)
         total_weight += weight
         neighbor_meta.append(
             {
                 "player_name": record["player_name"],
                 "position": record["position"],
                 "family": record["family"],
-                "distance": round(distance, 2),
+                "distance": round(total_distance, 2),
+                "distance_stats": round(stat_distance, 2),
+                "distance_meta": round(meta_distance, 2),
+                "same_name": meta_breakdown.get("same_name", False),
+                "same_style": meta_breakdown.get("same_style", False),
             }
         )
         for stat in DIRECT_STATS + SPECIAL_STATS:
@@ -566,14 +948,15 @@ def weighted_neighbor_delta(player: Dict[str, Any], family: str, top_k: int = 5)
 
 
 def merge_deltas(
+    player: Dict[str, Any],
     base: Dict[str, float],
     family_delta: Dict[str, float],
     knn_delta: Dict[str, float],
     style_delta: Dict[str, float],
-    family_weight: float = 0.6,
-    knn_weight: float = 0.4,
+    family_count: int = 0,
 ) -> Dict[str, int]:
     output: Dict[str, int] = {}
+    family_weight, knn_weight = choose_family_weight(player.get("family", "ATTACKER"), family_count)
 
     for stat in DIRECT_STATS + SPECIAL_STATS:
         value = safe_float(base.get(stat))
@@ -609,22 +992,43 @@ def merge_deltas(
         1,
         3,
     )
-    return output
+    return apply_high_stat_guardrails(player, output)
 
 
-def estimate_confidence(family: str, neighbors: List[Dict[str, Any]]) -> Tuple[str, float]:
+def estimate_confidence(family: str, position: str, neighbors: List[Dict[str, Any]]) -> Tuple[str, float]:
     family_count = DATASET_STATE["family_counts"].get(family, 0)
-    if not neighbors:
-        base = 0.45
-    else:
-        avg_distance = sum(item["distance"] for item in neighbors) / len(neighbors)
-        base = max(0.25, 0.85 - min(avg_distance / 150.0, 0.4))
-    base += min(family_count / 25.0, 0.2)
-    base = min(0.95, max(0.25, base))
+    position_count = DATASET_STATE.get("position_counts", {}).get(position, 0)
 
-    if base >= 0.75:
+    if not neighbors:
+        base = 0.35
+    else:
+        distances = [safe_float(item.get("distance"), 999.0) for item in neighbors]
+        avg_distance = sum(distances) / len(distances)
+        nearest_distance = min(distances)
+        same_style_ratio = sum(1 for item in neighbors if item.get("same_style")) / len(neighbors)
+        same_name_hit = any(item.get("same_name") for item in neighbors)
+
+        if nearest_distance <= 1.0:
+            base = 0.90
+        else:
+            nearest_score = 1.0 / (1.0 + (nearest_distance / 24.0) ** 1.7)
+            avg_score = 1.0 / (1.0 + (avg_distance / 42.0) ** 1.5)
+            family_score = min(math.log1p(family_count) / math.log1p(80), 1.0)
+            position_score = min(math.log1p(position_count) / math.log1p(40), 1.0)
+            base = (
+                0.38 * nearest_score
+                + 0.22 * avg_score
+                + 0.16 * family_score
+                + 0.12 * position_score
+                + 0.07 * same_style_ratio
+                + 0.05 * (1.0 if same_name_hit else 0.0)
+            )
+
+    base = min(0.97, max(0.28, base))
+
+    if base >= 0.78:
         label = "tinggi"
-    elif base >= 0.55:
+    elif base >= 0.56:
         label = "sedang"
     else:
         label = "rendah"
@@ -676,18 +1080,27 @@ def convert_player(payload: Dict[str, Any]) -> Dict[str, Any]:
     player["family"] = family
 
     base = build_base_projection(player)
-    family_delta = FAMILY_DELTA_PROFILES.get(family, FAMILY_DELTA_PROFILES["ATTACKER"])
+    family_delta, profile_notes = resolve_delta_profile(player, family, player["position"])
     knn_delta, neighbors = weighted_neighbor_delta(player, family)
-    style_delta, notes = find_style_adjustments(player)
+    style_delta, style_notes = find_style_adjustments(player)
 
     pes_stats = merge_deltas(
+        player=player,
         base=base,
         family_delta=family_delta,
         knn_delta=knn_delta,
         style_delta=style_delta,
+        family_count=DATASET_STATE.get("family_counts", {}).get(family, 0),
     )
 
-    confidence_label, confidence_score = estimate_confidence(family, neighbors)
+    confidence_label, confidence_score = estimate_confidence(family, player["position"], neighbors)
+
+    notes = []
+    notes.extend(profile_notes)
+    notes.extend(style_notes or ["Tidak ada style rule tambahan yang aktif."])
+    notes.append("Guardrail high-stat aktif untuk mencegah stat top turun terlalu jauh dari input eFootball.")
+    if DATASET_STATE.get("loaded"):
+        notes.append(f"Dataset aktif: {len(DATASET_STATE['records'])} record gabungan dari {len(DATASET_STATE.get('paths', []))} file.")
 
     return {
         "input_meta": {
@@ -710,6 +1123,7 @@ def convert_player(payload: Dict[str, Any]) -> Dict[str, Any]:
             "dataset_path": DATASET_STATE["path"],
             "dataset_records": len(DATASET_STATE["records"]),
             "family_count": DATASET_STATE["family_counts"].get(family, 0),
+            "position_count": DATASET_STATE.get("position_counts", {}).get(player["position"], 0),
             "confidence_label": confidence_label,
             "confidence_score": confidence_score,
         },
@@ -717,7 +1131,7 @@ def convert_player(payload: Dict[str, Any]) -> Dict[str, Any]:
         "base_projection_before_adjustment": base,
         "style_adjustments": style_delta,
         "neighbors_used": neighbors,
-        "notes": notes or ["Tidak ada style rule tambahan yang aktif."],
+        "notes": notes,
     }
 
 

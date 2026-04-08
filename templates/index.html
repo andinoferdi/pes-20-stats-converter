@@ -401,6 +401,101 @@
 
         .json-textarea:focus { border-color: var(--border-bright); }
 
+        .input-mode-tabs {
+            display: inline-flex;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: var(--surface-2);
+            overflow: hidden;
+        }
+
+        .mode-tab-btn {
+            min-height: 36px;
+            padding: 0 14px;
+            border: none;
+            background: transparent;
+            color: var(--text-muted);
+            font-family: var(--font-mono);
+            font-size: 11px;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            cursor: pointer;
+        }
+
+        .mode-tab-btn.active {
+            background: var(--accent-dim);
+            color: var(--accent);
+        }
+
+        .mode-panel.hidden {
+            display: none;
+        }
+
+        .manual-groups {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 12px;
+        }
+
+        @media (min-width: 960px) {
+            .manual-groups {
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+            }
+        }
+
+        .manual-group {
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            overflow: hidden;
+            background: var(--surface-2);
+        }
+
+        .manual-group-header {
+            padding: 9px 12px;
+            border-bottom: 1px solid var(--border);
+            color: var(--text-dim);
+            font-family: var(--font-mono);
+            font-size: 10px;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+        }
+
+        .manual-group-body {
+            padding: 10px;
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 8px;
+        }
+
+        .manual-stat-row {
+            display: grid;
+            grid-template-columns: 1fr 84px;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .manual-stat-label {
+            color: var(--text-muted);
+            font-size: 12px;
+            line-height: 1.3;
+        }
+
+        .manual-stat-input {
+            min-height: 38px;
+            padding: 8px 10px;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text);
+            font-family: var(--font-mono);
+            font-size: 12px;
+            outline: none;
+        }
+
+        .manual-stat-input:focus {
+            border-color: var(--border-bright);
+        }
+
         /* ─── SCHEMA PREVIEW ─────────────────────────── */
         .schema-pre {
             background: var(--bg);
@@ -1061,12 +1156,12 @@
                     </div>
                 </div>
 
-                <!-- STATS JSON INPUT -->
+                <!-- STATS INPUT -->
                 <div class="panel">
                     <div class="panel-header">
                         <div>
-                            <div class="panel-title">Stats JSON</div>
-                            <div class="panel-sub">Hanya stats eFootball (26 atribut wajib)</div>
+                            <div class="panel-title">Input Stats</div>
+                            <div class="panel-sub">Pilih mode Manual atau JSON (26 atribut eFootball wajib)</div>
                         </div>
                         <div class="btn-row">
                             <button id="loadExampleBtn" class="btn btn-ghost">Isi Contoh</button>
@@ -1076,11 +1171,23 @@
                         </div>
                     </div>
                     <div class="panel-body">
-                        <textarea
-                            id="jsonInput"
-                            class="json-textarea"
-                            spellcheck="false"
-                            placeholder="Tempel JSON stats eFootball di sini..."></textarea>
+                        <div class="input-mode-tabs" style="margin-bottom:12px;">
+                            <button id="modeManualBtn" class="mode-tab-btn active" type="button" data-mode="manual">Manual</button>
+                            <button id="modeJsonBtn" class="mode-tab-btn" type="button" data-mode="json">JSON</button>
+                        </div>
+                        <div class="panel-sub" style="margin-bottom:12px;">Catatan: input stats menerima 40 sampai 110, engine backend tetap clamp maksimal 99.</div>
+
+                        <div id="statsManualPanel" class="mode-panel">
+                            <div id="manualStatsGroups" class="manual-groups"></div>
+                        </div>
+
+                        <div id="statsJsonPanel" class="mode-panel hidden">
+                            <textarea
+                                id="jsonInput"
+                                class="json-textarea"
+                                spellcheck="false"
+                                placeholder="Tempel JSON stats eFootball di sini..."></textarea>
+                        </div>
                     </div>
                 </div>
 
@@ -1178,7 +1285,7 @@
                     <div class="panel-body" style="padding:48px 24px; text-align:center;">
                         <div style="font-family:var(--font-mono); font-size:28px; color:var(--border-bright); margin-bottom:12px;">⬡</div>
                         <div style="font-size:13px; color:var(--text-dim); line-height:1.7;">
-                            Isi info pemain &amp; tempel JSON stats di kolom kiri,<br>
+                            Isi info pemain &amp; input stats via mode Manual atau JSON di kolom kiri,<br>
                             lalu tekan <strong style="color:var(--text-muted)">Konversi</strong>.
                         </div>
                     </div>
@@ -1191,6 +1298,11 @@
 
 <script>
     const jsonInput      = document.getElementById('jsonInput');
+    const modeManualBtn  = document.getElementById('modeManualBtn');
+    const modeJsonBtn    = document.getElementById('modeJsonBtn');
+    const statsManualPanel = document.getElementById('statsManualPanel');
+    const statsJsonPanel = document.getElementById('statsJsonPanel');
+    const manualStatsGroups = document.getElementById('manualStatsGroups');
     const convertBtn     = document.getElementById('convertBtn');
     const loadExampleBtn = document.getElementById('loadExampleBtn');
     const btnLabel       = document.getElementById('btnLabel');
@@ -1228,14 +1340,235 @@
         jump: 62, physical: 62, balance: 86, stamina: 86
     };
 
-    function buildPayload() {
-        const statsText = jsonInput.value.trim();
-        let stats;
+    const EF_REQUIRED_STATS = [
+        'offensive_awareness', 'ball_control', 'dribbling', 'tight_possession',
+        'low_pass', 'lofted_pass', 'finishing', 'heading', 'place_kicking', 'curl',
+        'defensive_awareness', 'defensive_engagement', 'tackling', 'aggression',
+        'goalkeeping', 'gk_catching', 'gk_parrying', 'gk_reflexes', 'gk_reach',
+        'speed', 'acceleration', 'kicking_power', 'jump', 'physical', 'balance', 'stamina'
+    ];
+
+    const MANUAL_STAT_GROUPS = {
+        'Attacking': [
+            'offensive_awareness', 'ball_control', 'dribbling', 'tight_possession',
+            'low_pass', 'lofted_pass', 'finishing', 'heading', 'place_kicking', 'curl'
+        ],
+        'Defending': [
+            'defensive_awareness', 'defensive_engagement', 'tackling', 'aggression',
+            'goalkeeping', 'gk_catching', 'gk_parrying', 'gk_reflexes', 'gk_reach'
+        ],
+        'Athletiscism': [
+            'speed', 'acceleration', 'kicking_power', 'jump', 'physical', 'balance', 'stamina'
+        ]
+    };
+
+    const EF_STAT_LABELS = {
+        offensive_awareness: 'Offensive Awareness',
+        ball_control: 'Ball Control',
+        dribbling: 'Dribbling',
+        tight_possession: 'Tight Possession',
+        low_pass: 'Low Pass',
+        lofted_pass: 'Lofted Pass',
+        finishing: 'Finishing',
+        heading: 'Heading',
+        place_kicking: 'Place Kicking',
+        curl: 'Curl',
+        defensive_awareness: 'Defensive Awareness',
+        defensive_engagement: 'Defensive Engagement',
+        tackling: 'Tackling',
+        aggression: 'Aggression',
+        goalkeeping: 'Goalkeeping',
+        gk_catching: 'GK Catching',
+        gk_parrying: 'GK Parrying',
+        gk_reflexes: 'GK Reflexes',
+        gk_reach: 'GK Reach',
+        speed: 'Speed',
+        acceleration: 'Acceleration',
+        kicking_power: 'Kicking Power',
+        jump: 'Jump',
+        physical: 'Physical',
+        balance: 'Balance',
+        stamina: 'Stamina'
+    };
+
+    const manualInputs = {};
+    let activeInputMode = 'manual';
+    let statsState = {};
+    let latestJsonError = '';
+    const STATS_MIN_VALUE = 40;
+    const STATS_MAX_VALUE = 110;
+
+    function showError(message) {
+        errorBox.textContent = message;
+        errorBox.style.display = 'block';
+    }
+
+    function hideError() {
+        errorBox.style.display = 'none';
+    }
+
+    function normalizeStatsState(candidate) {
+        const normalized = {};
+        EF_REQUIRED_STATS.forEach((key) => {
+            const numeric = Number(candidate[key]);
+            normalized[key] = Number.isFinite(numeric) ? numeric : null;
+        });
+        return normalized;
+    }
+
+    function validateStats(stats, enforceRange) {
+        const errors = [];
+        EF_REQUIRED_STATS.forEach((key) => {
+            const value = stats[key];
+            if (!Number.isFinite(value)) {
+                errors.push(`${key} wajib angka.`);
+                return;
+            }
+            if (enforceRange && (value < STATS_MIN_VALUE || value > STATS_MAX_VALUE)) {
+                errors.push(`${key} harus di rentang ${STATS_MIN_VALUE} sampai ${STATS_MAX_VALUE}.`);
+            }
+        });
+        return errors;
+    }
+
+    function renderManualFromState() {
+        EF_REQUIRED_STATS.forEach((key) => {
+            if (!manualInputs[key]) return;
+            const value = statsState[key];
+            manualInputs[key].value = Number.isFinite(value) ? String(value) : '';
+        });
+    }
+
+    function renderJsonFromState() {
+        const output = {};
+        EF_REQUIRED_STATS.forEach((key) => {
+            const value = statsState[key];
+            output[key] = Number.isFinite(value) ? value : null;
+        });
+        jsonInput.value = JSON.stringify(output, null, 2);
+    }
+
+    function setStatsState(nextStats, source) {
+        statsState = normalizeStatsState(nextStats);
+        if (source !== 'manual') {
+            renderManualFromState();
+        }
+        if (source !== 'json') {
+            renderJsonFromState();
+        }
+    }
+
+    function parseJsonToState() {
+        const rawText = jsonInput.value.trim();
+        if (!rawText) {
+            throw new Error('Stats JSON tidak boleh kosong.');
+        }
+
+        let parsed;
         try {
-            stats = JSON.parse(statsText);
+            parsed = JSON.parse(rawText);
         } catch (e) {
             throw new Error('Stats JSON tidak valid: ' + e.message);
         }
+
+        if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+            throw new Error('Stats JSON harus berupa object key-value.');
+        }
+
+        const candidate = normalizeStatsState(parsed);
+        const validationErrors = validateStats(candidate, true);
+        if (validationErrors.length) {
+            throw new Error('Stats JSON belum valid: ' + validationErrors[0]);
+        }
+        return candidate;
+    }
+
+    function setActiveInputMode(mode) {
+        activeInputMode = mode === 'json' ? 'json' : 'manual';
+        modeManualBtn.classList.toggle('active', activeInputMode === 'manual');
+        modeJsonBtn.classList.toggle('active', activeInputMode === 'json');
+        statsManualPanel.classList.toggle('hidden', activeInputMode !== 'manual');
+        statsJsonPanel.classList.toggle('hidden', activeInputMode !== 'json');
+
+        if (activeInputMode === 'json' && latestJsonError) {
+            showError(latestJsonError);
+            return;
+        }
+        hideError();
+    }
+
+    function createManualStatsFields() {
+        manualStatsGroups.innerHTML = '';
+        Object.entries(MANUAL_STAT_GROUPS).forEach(([groupName, keys]) => {
+            const groupEl = document.createElement('div');
+            groupEl.className = 'manual-group';
+            groupEl.innerHTML = `<div class="manual-group-header">${groupName}</div>`;
+
+            const bodyEl = document.createElement('div');
+            bodyEl.className = 'manual-group-body';
+
+            keys.forEach((key) => {
+                const rowEl = document.createElement('div');
+                rowEl.className = 'manual-stat-row';
+
+                const labelEl = document.createElement('label');
+                labelEl.className = 'manual-stat-label';
+                labelEl.textContent = EF_STAT_LABELS[key] || key;
+                labelEl.setAttribute('for', `manual-${key}`);
+
+                const inputEl = document.createElement('input');
+                inputEl.id = `manual-${key}`;
+                inputEl.type = 'number';
+                inputEl.min = String(STATS_MIN_VALUE);
+                inputEl.max = String(STATS_MAX_VALUE);
+                inputEl.step = '1';
+                inputEl.className = 'manual-stat-input';
+                inputEl.placeholder = `${STATS_MIN_VALUE}-${STATS_MAX_VALUE}`;
+                inputEl.dataset.statKey = key;
+
+                inputEl.addEventListener('input', (event) => {
+                    const statKey = event.target.dataset.statKey;
+                    const rawValue = event.target.value.trim();
+                    if (rawValue === '') {
+                        statsState[statKey] = null;
+                    } else {
+                        const parsed = Number(rawValue);
+                        statsState[statKey] = Number.isFinite(parsed) ? parsed : null;
+                    }
+                    latestJsonError = '';
+                    renderJsonFromState();
+                    if (activeInputMode === 'manual') {
+                        hideError();
+                    }
+                });
+
+                manualInputs[key] = inputEl;
+                rowEl.appendChild(labelEl);
+                rowEl.appendChild(inputEl);
+                bodyEl.appendChild(rowEl);
+            });
+
+            groupEl.appendChild(bodyEl);
+            manualStatsGroups.appendChild(groupEl);
+        });
+    }
+
+    function buildPayload() {
+        if (activeInputMode === 'json') {
+            const parsed = parseJsonToState();
+            setStatsState(parsed, 'json');
+            latestJsonError = '';
+        }
+
+        const validationErrors = validateStats(statsState, true);
+        if (validationErrors.length) {
+            throw new Error('Stats belum valid: ' + validationErrors[0]);
+        }
+
+        const payloadStats = {};
+        EF_REQUIRED_STATS.forEach((key) => {
+            payloadStats[key] = Number(statsState[key]);
+        });
 
         return {
             player_name: playerNameEl.value.trim() || 'Unknown Player',
@@ -1248,7 +1581,7 @@
             weight_kg: parseInt(weightKgEl.value) || 0,
             foot: footEl.value,
             condition: conditionEl.value,
-            stats: stats,
+            stats: payloadStats,
         };
     }
 
@@ -1284,6 +1617,7 @@
         const engineFields = [
             ['Dataset Records', proj.dataset_records],
             ['Family Count', proj.family_count],
+            ['Position Count', proj.position_count || '-'],
             ['Confidence', proj.confidence_label + ' (' + proj.confidence_score + ')', true],
             ['Engine', proj.engine_mode.split('+')[0].trim(), false],
         ];
@@ -1306,7 +1640,7 @@
             'defensive_awareness', 'ball_winning', 'aggression',
             'gk_awareness', 'gk_catching', 'gk_clearing', 'gk_reflexes', 'gk_reach'
         ],
-        'Athleticism': [
+        'Athletiscism': [
             'speed', 'acceleration', 'kicking_power', 'jump',
             'physical_contact', 'balance', 'stamina'
         ]
@@ -1401,12 +1735,15 @@
             return;
         }
         neighbors.forEach(item => {
+            const flags = [];
+            if (item.same_name) flags.push('same name');
+            if (item.same_style) flags.push('same style');
             const d = document.createElement('div');
             d.className = 'neighbor-card';
             d.innerHTML = `
                 <div>
                     <div class="neighbor-name">${item.player_name}</div>
-                    <div class="neighbor-meta">${item.position} &bull; ${item.family}</div>
+                    <div class="neighbor-meta">${item.position} &bull; ${item.family} &bull; stat d=${item.distance_stats ?? '-'} &bull; meta d=${item.distance_meta ?? '-'}${flags.length ? ' &bull; ' + flags.join(', ') : ''}</div>
                 </div>
                 <div class="neighbor-dist">d = ${item.distance}</div>
             `;
@@ -1464,13 +1801,35 @@
         weightKgEl.value = 73;
         footEl.value = 'Right';
         conditionEl.value = 'B';
-        jsonInput.value = JSON.stringify(exampleStats, null, 2);
+        setStatsState(exampleStats, 'init');
+        latestJsonError = '';
+        hideError();
+    });
+
+    modeManualBtn.addEventListener('click', () => setActiveInputMode('manual'));
+    modeJsonBtn.addEventListener('click', () => setActiveInputMode('json'));
+
+    jsonInput.addEventListener('input', () => {
+        try {
+            const parsed = parseJsonToState();
+            setStatsState(parsed, 'json');
+            latestJsonError = '';
+            if (activeInputMode === 'json') {
+                hideError();
+            }
+        } catch (err) {
+            latestJsonError = err.message;
+            if (activeInputMode === 'json') {
+                showError(err.message);
+            }
+        }
     });
 
     convertBtn.addEventListener('click', convertJson);
 
-    // Pre-fill stats on load
-    jsonInput.value = JSON.stringify(exampleStats, null, 2);
+    createManualStatsFields();
+    setStatsState(exampleStats, 'init');
+    setActiveInputMode('manual');
 </script>
 </body>
 </html>
