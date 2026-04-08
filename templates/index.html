@@ -30,6 +30,83 @@
             --font-mono: 'JetBrains Mono', monospace;
         }
 
+        [data-theme="light"] {
+            --bg: #f4f5f0;
+            --surface: #ffffff;
+            --surface-2: #eceee8;
+            --border: #d8dbd0;
+            --border-bright: #bfc4b3;
+            --text: #181a13;
+            --text-muted: #555c48;
+            --text-dim: #9aa090;
+            --accent: #3d7a00;
+            --accent-dim: rgba(61, 122, 0, 0.1);
+            --accent-glow: rgba(61, 122, 0, 0.05);
+            --red: #c0392b;
+            --red-dim: rgba(192, 57, 43, 0.08);
+            --amber: #b45309;
+        }
+
+        [data-theme="light"] body {
+            background-image:
+                radial-gradient(ellipse 80% 50% at 50% -10%, rgba(61, 122, 0, 0.04) 0%, transparent 60%);
+        }
+
+        [data-theme="light"] .btn-primary {
+            background: #3d7a00;
+            color: #ffffff;
+        }
+
+        [data-theme="light"] .btn-primary:hover {
+            background: #2e5c00;
+            box-shadow: 0 4px 16px rgba(61, 122, 0, 0.2);
+        }
+
+        [data-theme="light"] .stat-badge.tier-a {
+            background: #3d7a00;
+            color: #ffffff;
+        }
+
+        [data-theme="light"] header {
+            background: rgba(244, 245, 240, 0.92);
+        }
+
+        [data-theme="light"] .stat-badge.tier-d {
+            background: #94a3b8;
+            color: #ffffff;
+        }
+
+        /* ─── THEME TOGGLE ───────────────────────────── */
+        .theme-toggle {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            border-radius: 7px;
+            border: 1px solid var(--border-bright);
+            background: transparent;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: background 0.15s, color 0.15s, border-color 0.15s;
+            flex-shrink: 0;
+        }
+
+        .theme-toggle:hover {
+            background: var(--surface-2);
+            color: var(--text);
+        }
+
+        .theme-toggle svg { display: block; }
+
+        /* transition on theme switch */
+        body, header, .panel, .panel-header, .panel-body,
+        .status-bar, .status-chip, .form-input, .form-select,
+        .json-textarea, .schema-pre, .meta-chip, .note-item,
+        .neighbor-card, .other-stats-row {
+            transition: background-color 0.2s, border-color 0.2s, color 0.2s;
+        }
+
         html { scroll-behavior: smooth; }
 
         body {
@@ -804,6 +881,10 @@
             </div>
             <div style="display:flex; align-items:center; gap:10px;">
                 <span style="font-size:12px; font-family:var(--font-mono); color:var(--text-dim);">v1.1</span>
+                <button id="themeToggle" class="theme-toggle" aria-label="Toggle light/dark mode">
+                    <!-- icon diupdate via JS -->
+                    <svg id="themeIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></svg>
+                </button>
             </div>
         </div>
     </div>
@@ -1297,6 +1378,27 @@
 </main>
 
 <script>
+    /* ─── THEME TOGGLE ─────────────────────────── */
+    const ICON_MOON = '<circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>';
+    const ICON_SUN  = '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>';
+
+    const themeToggle = document.getElementById('themeToggle');
+    const themeIcon   = document.getElementById('themeIcon');
+
+    function applyTheme(theme) {
+        document.documentElement.setAttribute('data-theme', theme);
+        themeIcon.innerHTML = theme === 'light' ? ICON_SUN : ICON_MOON;
+        localStorage.setItem('theme', theme);
+    }
+
+    const savedTheme = localStorage.getItem('theme') ||
+        (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+    applyTheme(savedTheme);
+
+    themeToggle.addEventListener('click', () => {
+        const next = document.documentElement.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+        applyTheme(next);
+    });
     const jsonInput      = document.getElementById('jsonInput');
     const modeManualBtn  = document.getElementById('modeManualBtn');
     const modeJsonBtn    = document.getElementById('modeJsonBtn');
