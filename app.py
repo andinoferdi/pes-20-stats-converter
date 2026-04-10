@@ -514,7 +514,53 @@ FAMILY_REDISTRIBUTION_FALLBACKS = {
 
 CONDITION_MAP = {"E": 0, "D": 1, "C": 2, "B": 3, "A": 4}
 
-DATASET_STATE: Dict[str, Any] = {"path": None, "records": [], "family_counts": {}, "loaded": False}
+MANUAL_BASE_WEIGHT = 0.50
+DATASET_BASE_WEIGHT = 0.50
+
+DATASET_COMPONENT_INTERNAL_WEIGHTS = {
+    "high": (0.35, 0.65),
+    "medium": (0.55, 0.45),
+    "low": (0.75, 0.25),
+}
+
+DATASET_CORRECTION_LIMITS = {
+    "core": {"high": 7.0, "medium": 5.0, "low": 3.0},
+    "support": {"high": 6.0, "medium": 4.0, "low": 3.0},
+    "defense": {"high": 6.0, "medium": 4.0, "low": 3.0},
+    "special": {"high": 8.0, "medium": 5.0, "low": 3.0},
+}
+
+DIRECT_RISE_CAPS = {
+    "offensive_awareness": {"high": 8, "medium": 6, "low": 4},
+    "finishing": {"high": 8, "medium": 6, "low": 4},
+    "ball_control": {"high": 7, "medium": 5, "low": 4},
+    "dribbling": {"high": 7, "medium": 5, "low": 4},
+    "tight_possession": {"high": 7, "medium": 5, "low": 4},
+    "low_pass": {"high": 8, "medium": 6, "low": 5},
+    "lofted_pass": {"high": 8, "medium": 6, "low": 5},
+    "heading": {"high": 10, "medium": 8, "low": 6},
+    "place_kicking": {"high": 8, "medium": 6, "low": 5},
+    "curl": {"high": 8, "medium": 6, "low": 5},
+    "defensive_awareness": {"high": 8, "medium": 6, "low": 5},
+    "aggression": {"high": 8, "medium": 6, "low": 5},
+    "speed": {"high": 6, "medium": 4, "low": 3},
+    "acceleration": {"high": 6, "medium": 4, "low": 3},
+    "kicking_power": {"high": 8, "medium": 6, "low": 5},
+    "jump": {"high": 8, "medium": 6, "low": 5},
+    "balance": {"high": 7, "medium": 5, "low": 4},
+    "stamina": {"high": 7, "medium": 5, "low": 4},
+}
+
+SPECIAL_RISE_CAPS = {
+    "physical_contact": {"high": 10, "medium": 8, "low": 6},
+    "ball_winning": {"high": 10, "medium": 8, "low": 6},
+    "gk_awareness": {"high": 6, "medium": 4, "low": 3},
+    "gk_catching": {"high": 6, "medium": 4, "low": 3},
+    "gk_clearing": {"high": 6, "medium": 4, "low": 3},
+    "gk_reflexes": {"high": 6, "medium": 4, "low": 3},
+    "gk_reach": {"high": 6, "medium": 4, "low": 3},
+}
+
 DATASET_STATE: Dict[str, Any] = {"path": None, "records": [], "family_counts": {}, "loaded": False}
 
 
@@ -645,8 +691,11 @@ def metadata_distance(player: Dict[str, Any], record: Dict[str, Any]) -> Tuple[f
         distance -= 2.0
     elif player.get("playing_style") and record.get("playing_style"):
         distance += 6.0
+
     if same_name:
         distance -= 6.0
+    elif str(player.get("player_name", "")).strip() and str(record.get("player_name", "")).strip():
+        distance += 8.0
 
     height_penalty = abs(safe_float(player.get("height_cm")) - safe_float(record.get("height_cm"))) * 0.22
     weight_penalty = abs(safe_float(player.get("weight_kg")) - safe_float(record.get("weight_kg"))) * 0.18
@@ -772,14 +821,35 @@ def apply_high_stat_guardrails(player: Dict[str, Any], output: Dict[str, int]) -
     return protected
 
 
-def choose_family_weight(family: str, family_count: int) -> Tuple[float, float]:
-    if family_count >= 40:
-        return 0.35, 0.65
-    if family_count >= 15:
-        return 0.45, 0.55
-    if family_count >= 8:
-        return 0.55, 0.45
-    return 0.70, 0.30
+def confidence_bucket(confidence_score: float) -> str:
+    if confidence_score >= 0.78:
+        return "high"
+    if confidence_score >= 0.56:
+        return "medium"
+    return "low"
+
+
+def choose_manual_dataset_weights(confidence_score: float, neighbors: List[Dict[str, Any]]) -> Tuple[float, float]:
+    if not neighbors:
+        return 0.50, 0.0
+
+    bucket = confidence_bucket(confidence_score)
+    nearest_distance = min(safe_float(item.get("distance"), 999.0) for item in neighbors)
+    same_name_hit = any(item.get("same_name") for item in neighbors)
+
+    dataset_weight = DATASET_BASE_WEIGHT
+    if same_name_hit:
+        reliability_factor = 1.0
+    elif bucket == "high":
+        reliability_factor = 1.0 if nearest_distance <= 18 else 0.85
+    elif bucket == "medium":
+        reliability_factor = 0.70 if nearest_distance <= 30 else 0.55
+    else:
+        reliability_factor = 0.35 if nearest_distance <= 35 else 0.20
+
+    dataset_weight *= reliability_factor
+    manual_weight = MANUAL_BASE_WEIGHT
+    return round(manual_weight, 4), round(dataset_weight, 4)
 
 
 def build_base_projection(player: Dict[str, Any], use_clamp: bool = True) -> Dict[str, float]:
@@ -1007,43 +1077,122 @@ def weighted_neighbor_delta(player: Dict[str, Any], family: str, top_k: int = 7)
     return normalized, neighbor_meta
 
 
+def resolve_dataset_delta_profile(family: str, position: str) -> Tuple[Dict[str, float], List[str]]:
+    notes: List[str] = []
+    family_profiles = DATASET_STATE.get("family_delta_profiles", {})
+    position_profiles = DATASET_STATE.get("position_delta_profiles", {})
+    family_counts = DATASET_STATE.get("family_counts", {})
+    position_counts = DATASET_STATE.get("position_counts", {})
+
+    family_empirical = family_profiles.get(family)
+    position_empirical = position_profiles.get(position)
+    family_count = family_counts.get(family, 0)
+    position_count = position_counts.get(position, 0)
+
+    tracked_stats = DIRECT_STATS + SPECIAL_STATS + ["weak_foot_usage", "weak_foot_accuracy", "form", "injury_resistance"]
+
+    if position_empirical and position_count >= 5:
+        notes.append(f"Dataset profile posisi aktif: {position} berbasis {position_count} data")
+        return {stat: safe_float(position_empirical.get(stat)) for stat in tracked_stats}, notes
+
+    if family_empirical and family_count >= 8:
+        notes.append(f"Dataset profile family aktif: {family} berbasis {family_count} data")
+        return {stat: safe_float(family_empirical.get(stat)) for stat in tracked_stats}, notes
+
+    notes.append("Dataset profile global tidak cukup kuat, neighbor-only support dipakai")
+    return {}, notes
+
+
+def blend_dataset_deltas(
+    dataset_profile_delta: Dict[str, float],
+    knn_delta: Dict[str, float],
+    confidence_score: float,
+    neighbors: List[Dict[str, Any]],
+) -> Tuple[Dict[str, float], List[str]]:
+    notes: List[str] = []
+    tracked_stats = DIRECT_STATS + SPECIAL_STATS + ["weak_foot_usage", "weak_foot_accuracy", "form", "injury_resistance"]
+
+    if not dataset_profile_delta and not knn_delta:
+        return {}, ["Tidak ada sinyal dataset yang bisa dipakai"]
+
+    bucket = confidence_bucket(confidence_score)
+    profile_weight, knn_weight = DATASET_COMPONENT_INTERNAL_WEIGHTS[bucket]
+    same_name_hit = any(item.get("same_name") for item in neighbors)
+
+    if same_name_hit:
+        profile_weight, knn_weight = 0.20, 0.80
+        notes.append("Same-name neighbor ditemukan, bobot dataset lebih condong ke nearest neighbor")
+    else:
+        notes.append(f"Blending dataset profile dan neighbor memakai bucket confidence: {bucket}")
+
+    if not dataset_profile_delta:
+        profile_weight, knn_weight = 0.0, 1.0
+    elif not knn_delta:
+        profile_weight, knn_weight = 1.0, 0.0
+
+    blended: Dict[str, float] = {}
+    for stat in tracked_stats:
+        blended[stat] = (profile_weight * safe_float(dataset_profile_delta.get(stat))) + (knn_weight * safe_float(knn_delta.get(stat)))
+
+    return blended, notes
+
+
+def dataset_correction_limit_for_stat(stat: str, confidence_score: float, same_name_hit: bool) -> float:
+    if same_name_hit:
+        return 999.0
+    bucket = confidence_bucket(confidence_score)
+    if stat in {"offensive_awareness", "finishing", "ball_control", "dribbling", "tight_possession", "speed", "acceleration", "balance", "stamina"}:
+        group = "core"
+    elif stat in DIRECT_STATS:
+        group = "support"
+    elif stat in {"ball_winning", "physical_contact"}:
+        group = "special"
+    else:
+        group = "special"
+    return DATASET_CORRECTION_LIMITS[group][bucket]
+
+
+def rise_cap_for_stat(stat: str, confidence_score: float, same_name_hit: bool) -> int:
+    if same_name_hit:
+        return 99
+    bucket = confidence_bucket(confidence_score)
+    if stat in DIRECT_RISE_CAPS:
+        return DIRECT_RISE_CAPS[stat][bucket]
+    if stat in SPECIAL_RISE_CAPS:
+        return SPECIAL_RISE_CAPS[stat][bucket]
+    return 6 if bucket == "high" else 5 if bucket == "medium" else 4
+
+
 def merge_deltas_raw(
     player: Dict[str, Any],
     base: Dict[str, float],
-    family_delta: Dict[str, float],
-    knn_delta: Dict[str, float],
+    manual_delta: Dict[str, float],
+    dataset_delta: Dict[str, float],
     style_delta: Dict[str, float],
-    family_count: int = 0,
+    confidence_score: float,
+    neighbors: List[Dict[str, Any]],
 ) -> Dict[str, float]:
     output: Dict[str, float] = {}
-    family_weight, knn_weight = choose_family_weight(player.get("family", "ATTACKER"), family_count)
+    manual_weight, dataset_weight = choose_manual_dataset_weights(confidence_score, neighbors)
+    same_name_hit = any(item.get("same_name") for item in neighbors)
 
     for stat in DIRECT_STATS + SPECIAL_STATS:
-        value = safe_float(base.get(stat))
-        value += family_weight * safe_float(family_delta.get(stat))
-        if knn_delta:
-            value += knn_weight * safe_float(knn_delta.get(stat))
-        value += safe_float(style_delta.get(stat))
+        base_value = safe_float(base.get(stat))
+        manual_component = manual_weight * safe_float(manual_delta.get(stat))
+        dataset_component = dataset_weight * safe_float(dataset_delta.get(stat))
+        limit = dataset_correction_limit_for_stat(stat, confidence_score, same_name_hit)
+        dataset_component = max(-limit, min(limit, dataset_component))
+        value = base_value + manual_component + dataset_component + safe_float(style_delta.get(stat))
         output[stat] = value
 
-    output["weak_foot_usage"] = (
-        (family_weight * safe_float(family_delta.get("weak_foot_usage", 2.5)))
-        + (knn_weight * safe_float(knn_delta.get("weak_foot_usage", 2.5)) if knn_delta else 0)
-        + 1.0
-    )
-    output["weak_foot_accuracy"] = (
-        (family_weight * safe_float(family_delta.get("weak_foot_accuracy", 3.0)))
-        + (knn_weight * safe_float(knn_delta.get("weak_foot_accuracy", 3.0)) if knn_delta else 0)
-        + 1.0
-    )
-    output["form"] = (
-        (family_weight * safe_float(family_delta.get("form", 6.0)))
-        + (knn_weight * safe_float(knn_delta.get("form", 6.0)) if knn_delta else 0)
-    )
-    output["injury_resistance"] = (
-        (family_weight * safe_float(family_delta.get("injury_resistance", 2.0)))
-        + (knn_weight * safe_float(knn_delta.get("injury_resistance", 2.0)) if knn_delta else 0)
-    )
+    for stat, base_default in [("weak_foot_usage", 2.5), ("weak_foot_accuracy", 3.0), ("form", 6.0), ("injury_resistance", 2.0)]:
+        manual_component = manual_weight * safe_float(manual_delta.get(stat, base_default))
+        dataset_component = dataset_weight * safe_float(dataset_delta.get(stat, 0.0))
+        dataset_component = max(-1.0, min(1.0, dataset_component))
+        output[stat] = manual_component + dataset_component + (1.0 if stat.startswith("weak_") else 0.0)
+
+    output["manual_weight_used"] = manual_weight
+    output["dataset_weight_used"] = dataset_weight
     return output
 
 
@@ -1118,10 +1267,35 @@ def redistribute_overflow(
     return working, transfers_log
 
 
+def apply_confidence_rise_guardrails(
+    player: Dict[str, Any],
+    base_projection: Dict[str, float],
+    output: Dict[str, int],
+    confidence_score: float,
+    neighbors: List[Dict[str, Any]],
+) -> Dict[str, int]:
+    guarded = dict(output)
+    same_name_hit = any(item.get("same_name") for item in neighbors)
+
+    for stat in DIRECT_STATS:
+        source_value = clamp(min(safe_float(player["stats"].get(stat)), 99))
+        max_rise = rise_cap_for_stat(stat, confidence_score, same_name_hit)
+        guarded[stat] = min(guarded.get(stat, 40), source_value + max_rise)
+
+    for stat in SPECIAL_STATS:
+        source_value = clamp(min(safe_float(base_projection.get(stat)), 99))
+        max_rise = rise_cap_for_stat(stat, confidence_score, same_name_hit)
+        guarded[stat] = min(guarded.get(stat, 40), source_value + max_rise)
+
+    return guarded
+
+
 def finalize_pes_stats(
     player: Dict[str, Any],
     base_projection: Dict[str, float],
     raw_output: Dict[str, float],
+    confidence_score: float,
+    neighbors: List[Dict[str, Any]],
 ) -> Tuple[Dict[str, int], List[Dict[str, Any]]]:
     redistributed_output, overflow_log = redistribute_overflow(player, base_projection, raw_output)
     finalized: Dict[str, int] = {}
@@ -1133,7 +1307,10 @@ def finalize_pes_stats(
     finalized["weak_foot_accuracy"] = clamp(redistributed_output.get("weak_foot_accuracy"), 1, 4)
     finalized["form"] = clamp(redistributed_output.get("form"), 1, 8)
     finalized["injury_resistance"] = clamp(redistributed_output.get("injury_resistance"), 1, 3)
-    return apply_high_stat_guardrails(player, finalized), overflow_log
+
+    finalized = apply_high_stat_guardrails(player, finalized)
+    finalized = apply_confidence_rise_guardrails(player, base_projection, finalized, confidence_score, neighbors)
+    return finalized, overflow_log
 
 
 def estimate_confidence(family: str, position: str, neighbors: List[Dict[str, Any]]) -> Tuple[str, float]:
@@ -1222,26 +1399,35 @@ def convert_player(payload: Dict[str, Any]) -> Dict[str, Any]:
 
     base_raw = build_base_projection(player, use_clamp=False)
     base = {key: clamp(value) for key, value in base_raw.items()}
-    family_delta, profile_notes = resolve_delta_profile(player, family, player["position"])
+
+    manual_delta = dict(FAMILY_DELTA_PROFILES.get(family, FAMILY_DELTA_PROFILES["ATTACKER"]))
+    dataset_profile_delta, dataset_profile_notes = resolve_dataset_delta_profile(family, player["position"])
     knn_delta, neighbors = weighted_neighbor_delta(player, family)
+    confidence_label, confidence_score = estimate_confidence(family, player["position"], neighbors)
+    dataset_delta, dataset_blend_notes = blend_dataset_deltas(dataset_profile_delta, knn_delta, confidence_score, neighbors)
     style_delta, style_notes = find_style_adjustments(player)
 
     raw_pes_stats = merge_deltas_raw(
         player=player,
         base=base_raw,
-        family_delta=family_delta,
-        knn_delta=knn_delta,
+        manual_delta=manual_delta,
+        dataset_delta=dataset_delta,
         style_delta=style_delta,
-        family_count=DATASET_STATE.get("family_counts", {}).get(family, 0),
+        confidence_score=confidence_score,
+        neighbors=neighbors,
     )
-    pes_stats, overflow_log = finalize_pes_stats(player, base_raw, raw_pes_stats)
+    pes_stats, overflow_log = finalize_pes_stats(player, base_raw, raw_pes_stats, confidence_score, neighbors)
 
-    confidence_label, confidence_score = estimate_confidence(family, player["position"], neighbors)
+    manual_weight_used = safe_float(raw_pes_stats.pop("manual_weight_used", MANUAL_BASE_WEIGHT))
+    dataset_weight_used = safe_float(raw_pes_stats.pop("dataset_weight_used", 0.0))
 
     notes = []
-    notes.extend(profile_notes)
+    notes.append(f"Komposisi utama aktif: manual {round(manual_weight_used * 100)} persen, dataset {round(dataset_weight_used * 100)} persen")
+    notes.extend(dataset_profile_notes)
+    notes.extend(dataset_blend_notes)
     notes.extend(style_notes or ["Tidak ada style rule tambahan yang aktif."])
     notes.append("Guardrail high-stat aktif untuk mencegah stat top turun terlalu jauh dari input eFootball.")
+    notes.append("Guardrail extreme-rise aktif untuk mencegah lonjakan berlebihan saat confidence rendah atau neighbor tidak cukup dekat.")
     if overflow_log:
         moved_total = round(sum(item.get("distributed", 0.0) for item in overflow_log), 2)
         leftover_total = round(sum(item.get("undistributed", 0.0) for item in overflow_log), 2)
@@ -1265,7 +1451,7 @@ def convert_player(payload: Dict[str, Any]) -> Dict[str, Any]:
         },
         "projection_meta": {
             "target_format": "PES 2020/2021 style stats",
-            "engine_mode": "hybrid rule-based + dataset-guided nearest profile",
+            "engine_mode": "hybrid rule-based 50 manual : 50 dataset max",
             "dataset_loaded": DATASET_STATE["loaded"],
             "dataset_path": DATASET_STATE["path"],
             "dataset_records": len(DATASET_STATE["records"]),
@@ -1273,10 +1459,13 @@ def convert_player(payload: Dict[str, Any]) -> Dict[str, Any]:
             "position_count": DATASET_STATE.get("position_counts", {}).get(player["position"], 0),
             "confidence_label": confidence_label,
             "confidence_score": confidence_score,
+            "manual_weight_used": round(manual_weight_used, 4),
+            "dataset_weight_used": round(dataset_weight_used, 4),
         },
         "pes_stats": pes_stats,
         "base_projection_before_adjustment": base,
         "style_adjustments": style_delta,
+        "dataset_delta_used": {k: round(v, 4) for k, v in dataset_delta.items()},
         "overflow_redistribution": overflow_log,
         "neighbors_used": neighbors,
         "notes": notes,
