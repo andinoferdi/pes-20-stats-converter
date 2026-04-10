@@ -582,7 +582,9 @@ def find_dataset_paths() -> List[str]:
         "paired_pes2020_efootball_seed_dataset.csv",
     ]
     search_roots = [
+        Path.cwd() / "dataset",
         Path.cwd(),
+        Path(__file__).resolve().parent / "dataset",
         Path(__file__).resolve().parent,
         Path("/mnt/data"),
     ]
@@ -591,7 +593,10 @@ def find_dataset_paths() -> List[str]:
         if not root.exists():
             continue
         for pattern in candidate_patterns:
-            matches.extend(root.glob(pattern))
+            for candidate in root.glob(pattern):
+                if candidate.name.lower().endswith("-backup.csv"):
+                    continue
+                matches.append(candidate)
     unique_matches = sorted(set(matches), key=lambda p: (p.stat().st_mtime, str(p)), reverse=True)
     return [str(item) for item in unique_matches]
 
