@@ -457,6 +457,61 @@ DIRECT_HIGH_STAT_GUARDRAILS = {
     "stamina": [(96, 0), (92, 1), (88, 2)],
 }
 
+OVERFLOW_REDISTRIBUTION_PRIORITY = {
+    "offensive_awareness": ["finishing", "acceleration", "ball_control", "speed"],
+    "finishing": ["offensive_awareness", "kicking_power", "curl", "ball_control"],
+    "ball_control": ["dribbling", "tight_possession", "low_pass", "balance"],
+    "dribbling": ["ball_control", "tight_possession", "speed", "acceleration"],
+    "tight_possession": ["ball_control", "dribbling", "low_pass", "balance"],
+    "low_pass": ["lofted_pass", "ball_control", "tight_possession", "place_kicking"],
+    "lofted_pass": ["low_pass", "curl", "place_kicking", "ball_control"],
+    "heading": ["jump", "physical_contact", "offensive_awareness", "kicking_power"],
+    "place_kicking": ["curl", "kicking_power", "low_pass", "lofted_pass"],
+    "curl": ["place_kicking", "lofted_pass", "finishing", "low_pass"],
+    "defensive_awareness": ["ball_winning", "aggression", "physical_contact", "stamina"],
+    "aggression": ["ball_winning", "defensive_awareness", "stamina", "physical_contact"],
+    "speed": ["acceleration", "dribbling", "balance", "stamina"],
+    "acceleration": ["speed", "dribbling", "balance", "offensive_awareness"],
+    "kicking_power": ["finishing", "place_kicking", "curl", "heading"],
+    "jump": ["heading", "physical_contact", "balance", "stamina"],
+    "balance": ["acceleration", "dribbling", "tight_possession", "stamina"],
+    "stamina": ["speed", "balance", "aggression", "low_pass"],
+    "physical_contact": ["jump", "ball_winning", "defensive_awareness", "heading"],
+    "ball_winning": ["defensive_awareness", "aggression", "physical_contact", "stamina"],
+    "gk_awareness": ["gk_catching", "gk_reflexes", "gk_reach", "gk_clearing"],
+    "gk_catching": ["gk_awareness", "gk_reflexes", "gk_reach", "balance"],
+    "gk_clearing": ["gk_awareness", "gk_reach", "gk_reflexes", "lofted_pass"],
+    "gk_reflexes": ["gk_awareness", "gk_catching", "gk_reach", "balance"],
+    "gk_reach": ["gk_awareness", "gk_reflexes", "gk_catching", "jump"],
+}
+
+FAMILY_REDISTRIBUTION_FALLBACKS = {
+    "ATTACKER": [
+        "offensive_awareness", "finishing", "kicking_power", "ball_control", "dribbling",
+        "tight_possession", "speed", "acceleration", "balance", "heading", "jump",
+        "low_pass", "curl", "place_kicking", "stamina", "physical_contact",
+    ],
+    "WIDE": [
+        "speed", "acceleration", "dribbling", "ball_control", "tight_possession",
+        "low_pass", "lofted_pass", "curl", "place_kicking", "stamina", "balance",
+        "offensive_awareness", "finishing",
+    ],
+    "MIDFIELDER": [
+        "low_pass", "lofted_pass", "ball_control", "tight_possession", "dribbling",
+        "balance", "stamina", "defensive_awareness", "ball_winning", "aggression",
+        "kicking_power", "offensive_awareness", "speed", "acceleration",
+    ],
+    "DEFENDER": [
+        "defensive_awareness", "ball_winning", "physical_contact", "aggression", "jump",
+        "heading", "stamina", "low_pass", "lofted_pass", "speed", "acceleration",
+        "balance", "kicking_power",
+    ],
+    "GOALKEEPER": [
+        "gk_awareness", "gk_catching", "gk_clearing", "gk_reflexes", "gk_reach",
+        "jump", "physical_contact", "balance", "lofted_pass", "low_pass",
+    ],
+}
+
 CONDITION_MAP = {"E": 0, "D": 1, "C": 2, "B": 3, "A": 4}
 
 DATASET_STATE: Dict[str, Any] = {"path": None, "records": [], "family_counts": {}, "loaded": False}
@@ -725,24 +780,24 @@ def choose_family_weight(family: str, family_count: int) -> Tuple[float, float]:
 def build_base_projection(player: Dict[str, Any], use_clamp: bool = True) -> Dict[str, float]:
     stats = player.get("stats", {})
     direct = {
-        "offensive_awareness": min(safe_float(stats.get("offensive_awareness")), 99),
-        "finishing": min(safe_float(stats.get("finishing")), 99),
-        "ball_control": min(safe_float(stats.get("ball_control")), 99),
-        "dribbling": min(safe_float(stats.get("dribbling")), 99),
-        "tight_possession": min(safe_float(stats.get("tight_possession")), 99),
-        "low_pass": min(safe_float(stats.get("low_pass")), 99),
-        "lofted_pass": min(safe_float(stats.get("lofted_pass")), 99),
-        "heading": min(safe_float(stats.get("heading")), 99),
-        "place_kicking": min(safe_float(stats.get("place_kicking")), 99),
-        "curl": min(safe_float(stats.get("curl")), 99),
-        "defensive_awareness": min(safe_float(stats.get("defensive_awareness")), 99),
-        "aggression": min(safe_float(stats.get("aggression")), 99),
-        "speed": min(safe_float(stats.get("speed")), 99),
-        "acceleration": min(safe_float(stats.get("acceleration")), 99),
-        "kicking_power": min(safe_float(stats.get("kicking_power")), 99),
-        "jump": min(safe_float(stats.get("jump")), 99),
-        "balance": min(safe_float(stats.get("balance")), 99),
-        "stamina": min(safe_float(stats.get("stamina")), 99),
+        "offensive_awareness": safe_float(stats.get("offensive_awareness")),
+        "finishing": safe_float(stats.get("finishing")),
+        "ball_control": safe_float(stats.get("ball_control")),
+        "dribbling": safe_float(stats.get("dribbling")),
+        "tight_possession": safe_float(stats.get("tight_possession")),
+        "low_pass": safe_float(stats.get("low_pass")),
+        "lofted_pass": safe_float(stats.get("lofted_pass")),
+        "heading": safe_float(stats.get("heading")),
+        "place_kicking": safe_float(stats.get("place_kicking")),
+        "curl": safe_float(stats.get("curl")),
+        "defensive_awareness": safe_float(stats.get("defensive_awareness")),
+        "aggression": safe_float(stats.get("aggression")),
+        "speed": safe_float(stats.get("speed")),
+        "acceleration": safe_float(stats.get("acceleration")),
+        "kicking_power": safe_float(stats.get("kicking_power")),
+        "jump": safe_float(stats.get("jump")),
+        "balance": safe_float(stats.get("balance")),
+        "stamina": safe_float(stats.get("stamina")),
     }
 
     direct["physical_contact"] = (
@@ -947,15 +1002,15 @@ def weighted_neighbor_delta(player: Dict[str, Any], family: str, top_k: int = 7)
     return normalized, neighbor_meta
 
 
-def merge_deltas(
+def merge_deltas_raw(
     player: Dict[str, Any],
     base: Dict[str, float],
     family_delta: Dict[str, float],
     knn_delta: Dict[str, float],
     style_delta: Dict[str, float],
     family_count: int = 0,
-) -> Dict[str, int]:
-    output: Dict[str, int] = {}
+) -> Dict[str, float]:
+    output: Dict[str, float] = {}
     family_weight, knn_weight = choose_family_weight(player.get("family", "ATTACKER"), family_count)
 
     for stat in DIRECT_STATS + SPECIAL_STATS:
@@ -964,35 +1019,116 @@ def merge_deltas(
         if knn_delta:
             value += knn_weight * safe_float(knn_delta.get(stat))
         value += safe_float(style_delta.get(stat))
-        output[stat] = clamp(value)
+        output[stat] = value
 
-    output["weak_foot_usage"] = clamp(
+    output["weak_foot_usage"] = (
         (family_weight * safe_float(family_delta.get("weak_foot_usage", 2.5)))
         + (knn_weight * safe_float(knn_delta.get("weak_foot_usage", 2.5)) if knn_delta else 0)
-        + 1.0,
-        1,
-        4,
+        + 1.0
     )
-    output["weak_foot_accuracy"] = clamp(
+    output["weak_foot_accuracy"] = (
         (family_weight * safe_float(family_delta.get("weak_foot_accuracy", 3.0)))
         + (knn_weight * safe_float(knn_delta.get("weak_foot_accuracy", 3.0)) if knn_delta else 0)
-        + 1.0,
-        1,
-        4,
+        + 1.0
     )
-    output["form"] = clamp(
+    output["form"] = (
         (family_weight * safe_float(family_delta.get("form", 6.0)))
-        + (knn_weight * safe_float(knn_delta.get("form", 6.0)) if knn_delta else 0),
-        1,
-        8,
+        + (knn_weight * safe_float(knn_delta.get("form", 6.0)) if knn_delta else 0)
     )
-    output["injury_resistance"] = clamp(
+    output["injury_resistance"] = (
         (family_weight * safe_float(family_delta.get("injury_resistance", 2.0)))
-        + (knn_weight * safe_float(knn_delta.get("injury_resistance", 2.0)) if knn_delta else 0),
-        1,
-        3,
+        + (knn_weight * safe_float(knn_delta.get("injury_resistance", 2.0)) if knn_delta else 0)
     )
-    return apply_high_stat_guardrails(player, output)
+    return output
+
+
+def redistribute_overflow(
+    player: Dict[str, Any],
+    base_projection: Dict[str, float],
+    raw_output: Dict[str, float],
+    high: int = 99,
+) -> Tuple[Dict[str, float], List[Dict[str, Any]]]:
+    working = {stat: safe_float(raw_output.get(stat)) for stat in raw_output}
+    transferable_stats = DIRECT_STATS + SPECIAL_STATS
+    family = player.get("family", "ATTACKER")
+    fallback_targets = FAMILY_REDISTRIBUTION_FALLBACKS.get(family, [])
+    transfers_log: List[Dict[str, Any]] = []
+
+    donor_candidates = []
+    for stat in transferable_stats:
+        source_overflow = max(0.0, safe_float(base_projection.get(stat)) - high)
+        merged_overflow = max(0.0, safe_float(raw_output.get(stat)) - high)
+        overflow_pool = max(source_overflow, merged_overflow)
+        if overflow_pool > 0:
+            donor_candidates.append((stat, overflow_pool, source_overflow, merged_overflow))
+
+    donor_candidates = sorted(donor_candidates, key=lambda item: item[1], reverse=True)
+
+    for donor, overflow_pool, source_overflow, merged_overflow in donor_candidates:
+        if overflow_pool <= 0:
+            continue
+
+        if source_overflow > 0 or safe_float(working.get(donor)) > high:
+            working[donor] = float(high)
+
+        remaining = overflow_pool
+        transfer_steps: List[Dict[str, float]] = []
+        attempted = set()
+        ordered_targets = OVERFLOW_REDISTRIBUTION_PRIORITY.get(donor, []) + fallback_targets + transferable_stats
+
+        for receiver in ordered_targets:
+            if receiver == donor or receiver in attempted:
+                continue
+            attempted.add(receiver)
+
+            receiver_value = safe_float(working.get(receiver))
+            if receiver_value >= high:
+                continue
+
+            capacity = high - receiver_value
+            if capacity <= 0:
+                continue
+
+            transfer_value = min(remaining, capacity)
+            working[receiver] = receiver_value + transfer_value
+            remaining -= transfer_value
+            transfer_steps.append({"to": receiver, "amount": round(transfer_value, 2)})
+
+            if remaining <= 1e-9:
+                remaining = 0.0
+                break
+
+        transfers_log.append(
+            {
+                "from": donor,
+                "overflow_pool": round(overflow_pool, 2),
+                "source_overflow": round(source_overflow, 2),
+                "merged_overflow": round(merged_overflow, 2),
+                "distributed": round(overflow_pool - remaining, 2),
+                "undistributed": round(max(remaining, 0.0), 2),
+                "targets": transfer_steps,
+            }
+        )
+
+    return working, transfers_log
+
+
+def finalize_pes_stats(
+    player: Dict[str, Any],
+    base_projection: Dict[str, float],
+    raw_output: Dict[str, float],
+) -> Tuple[Dict[str, int], List[Dict[str, Any]]]:
+    redistributed_output, overflow_log = redistribute_overflow(player, base_projection, raw_output)
+    finalized: Dict[str, int] = {}
+
+    for stat in DIRECT_STATS + SPECIAL_STATS:
+        finalized[stat] = clamp(redistributed_output.get(stat))
+
+    finalized["weak_foot_usage"] = clamp(redistributed_output.get("weak_foot_usage"), 1, 4)
+    finalized["weak_foot_accuracy"] = clamp(redistributed_output.get("weak_foot_accuracy"), 1, 4)
+    finalized["form"] = clamp(redistributed_output.get("form"), 1, 8)
+    finalized["injury_resistance"] = clamp(redistributed_output.get("injury_resistance"), 1, 3)
+    return apply_high_stat_guardrails(player, finalized), overflow_log
 
 
 def estimate_confidence(family: str, position: str, neighbors: List[Dict[str, Any]]) -> Tuple[str, float]:
@@ -1079,19 +1215,21 @@ def convert_player(payload: Dict[str, Any]) -> Dict[str, Any]:
     family = family_from_position(player["position"])
     player["family"] = family
 
-    base = build_base_projection(player)
+    base_raw = build_base_projection(player, use_clamp=False)
+    base = {key: clamp(value) for key, value in base_raw.items()}
     family_delta, profile_notes = resolve_delta_profile(player, family, player["position"])
     knn_delta, neighbors = weighted_neighbor_delta(player, family)
     style_delta, style_notes = find_style_adjustments(player)
 
-    pes_stats = merge_deltas(
+    raw_pes_stats = merge_deltas_raw(
         player=player,
-        base=base,
+        base=base_raw,
         family_delta=family_delta,
         knn_delta=knn_delta,
         style_delta=style_delta,
         family_count=DATASET_STATE.get("family_counts", {}).get(family, 0),
     )
+    pes_stats, overflow_log = finalize_pes_stats(player, base_raw, raw_pes_stats)
 
     confidence_label, confidence_score = estimate_confidence(family, player["position"], neighbors)
 
@@ -1099,6 +1237,10 @@ def convert_player(payload: Dict[str, Any]) -> Dict[str, Any]:
     notes.extend(profile_notes)
     notes.extend(style_notes or ["Tidak ada style rule tambahan yang aktif."])
     notes.append("Guardrail high-stat aktif untuk mencegah stat top turun terlalu jauh dari input eFootball.")
+    if overflow_log:
+        moved_total = round(sum(item.get("distributed", 0.0) for item in overflow_log), 2)
+        leftover_total = round(sum(item.get("undistributed", 0.0) for item in overflow_log), 2)
+        notes.append(f"Overflow redistribution aktif: {moved_total} poin kelebihan stat >99 dialihkan ke atribut relevan lain, sisa yang tidak punya kapasitas = {leftover_total}.")
     if DATASET_STATE.get("loaded"):
         notes.append(f"Dataset aktif: {len(DATASET_STATE['records'])} record gabungan dari {len(DATASET_STATE.get('paths', []))} file.")
 
@@ -1130,6 +1272,7 @@ def convert_player(payload: Dict[str, Any]) -> Dict[str, Any]:
         "pes_stats": pes_stats,
         "base_projection_before_adjustment": base,
         "style_adjustments": style_delta,
+        "overflow_redistribution": overflow_log,
         "neighbors_used": neighbors,
         "notes": notes,
     }
